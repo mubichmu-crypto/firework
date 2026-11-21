@@ -439,8 +439,9 @@
 
     if (shape){
       // 모양 불꽃: 그 모양을 그대로 확장시킨다
-      var pts = shapePoints(shape, shape === 'ring' ? 200 : 180);
-      var vScale = Math.min(W, H) * (0.16 + 0.10*size) / 34;
+      var pts = shapePoints(shape, 200);
+      var disp = Math.min(W*0.26, H*0.34) * (0.62 + 0.22*size);
+      var vScale = disp / 34;
       for (i=0;i<pts.length;i++){
         jj = 0.96 + Math.random()*0.08;
         vels.push([pts[i][0]*vScale*jj, pts[i][1]*vScale*jj]);
@@ -467,7 +468,7 @@
         vx: vels[i][0], vy: vels[i][1],
         life: life, max: life,
         color: (!shape && Math.random() < 0.28) ? c2 : color,
-        w: rnd(1.1, 2.5) * (size > 1.4 ? 1.12 : 1),
+        w: rnd(1.3, 2.6) * (size > 1.4 ? 1.12 : 1),
         g: grav,
         drag: shape ? 0.9755 : 0.972
       });
@@ -506,20 +507,20 @@
 
     // 하트 · 별 · 링 모양 축하 불꽃 (시간차)
     addT(0, function(){
-      burst(W*0.5, H*0.27, '#ff8fd0', { shape:'heart', size:2.0, color2:'#ffe3f2' });
+      burst(W*0.5, H*0.44, '#ff8fd0', { shape:'heart', size:2.0, color2:'#ffe3f2' });
     });
     addT(120 + step*1.6, function(){
-      burst(W*0.30, H*0.23, '#ffd93d', { shape:'star', size:1.6, color2:'#fff6c9' });
+      burst(W*0.28, H*0.40, '#ffd93d', { shape:'star', size:1.7, color2:'#fff6c9' });
     });
     addT(120 + step*3.2, function(){
-      burst(W*0.73, H*0.30, '#4ee6ff', { shape:'ring', size:1.8, color2:'#c8f7ff' });
+      burst(W*0.72, H*0.45, '#4ee6ff', { shape:'ring', size:1.9, color2:'#c8f7ff' });
     });
     addT(120 + step*4.6, function(){
-      burst(W*0.5, H*0.36, '#b46bff', { shape:'heart', size:1.5, color2:'#ff9ad5' });
+      burst(W*0.5, H*0.55, '#b46bff', { shape:'heart', size:1.5, color2:'#ff9ad5' });
     });
     addT(150 + n*step + 380, function(){
-      burst(W*0.5, H*0.22, '#fff3b0', { shape:'ring', size:2.2, color2:'#ff9fd6' });
-      burst(W*0.5, H*0.22, '#ffffff', { shape:'star', size:1.3, color2:'#ffd6f0', sound:false });
+      burst(W*0.5, H*0.36, '#fff3b0', { shape:'ring', size:2.2, color2:'#ff9fd6' });
+      burst(W*0.5, H*0.36, '#ffffff', { shape:'star', size:1.3, color2:'#ffd6f0', sound:false });
     });
   }
 
