@@ -153,8 +153,8 @@
         x: x, y: y,
         vx: Math.cos(ang)*spd,
         vy: Math.sin(ang)*spd,
-        life: rnd(52, 92),
-        max: 92,
+        life: rnd(40, 68),
+        max: 68,
         color: (style === 'double' && i % 2 === 0) ? c2 : color,
         w: rnd(1.2, 2.8),
         px: x, py: y
@@ -217,7 +217,7 @@
         continue;
       }
       var a = s.life / s.max;
-      ctx.globalAlpha = Math.max(0, Math.min(1, a*1.15));
+      ctx.globalAlpha = Math.max(0, Math.min(1, a*a*1.25));
       ctx.strokeStyle = s.color;
       ctx.lineWidth = s.w * (0.35 + a*0.8);
       ctx.beginPath(); ctx.moveTo(s.px, s.py); ctx.lineTo(s.x, s.y); ctx.stroke();
