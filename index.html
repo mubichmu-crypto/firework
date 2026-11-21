@@ -68,7 +68,7 @@
   var W = 0, H = 0, DPR = 1;
   var stars = [], rockets = [], sparks = [];
   var MAX_SPARKS = 2600;
-  var PALETTE = ['#ff5f6d','#ff8a3d','#ffd93d','#8affc1','#4ee6ff','#6b8cff','#b46bff','#ff6ec7','#ffffff','#ffb3c7'];
+  var PALETTE = ['#ff5f6d','#ff8a3d','#ffd93d','#8affc1','#4ee6ff','#6b8cff','#b46bff','#ff6ec7','#ffffff','#ffb3c7','#ffe98a'];
   var now = 0;
 
   function rnd(a,b){ return a + Math.random()*(b-a); }
@@ -81,21 +81,20 @@
     canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
     ctx.setTransform(DPR,0,0,DPR,0,0);
     makeStars();
-    ctx.fillStyle = '#05071a';
-    ctx.fillRect(0,0,W,H);
+    ctx.clearRect(0,0,W,H);
   }
 
   function makeStars(){
-    var count = Math.round((W*H)/9000);
-    count = Math.max(70, Math.min(count, 220));
+    var count = Math.round((W*H)/7000);
+    count = Math.max(80, Math.min(count, 260));
     stars = [];
     for(var i=0;i<count;i++){
       stars.push({
         x: Math.random()*W,
-        y: Math.random()*H*0.92,
-        r: rnd(0.5,1.6),
+        y: Math.random()*H*0.94,
+        r: rnd(0.4,1.25),
         p: Math.random()*Math.PI*2,
-        s: rnd(0.6,2.0),
+        s: rnd(0.5,1.8),
         b: rnd(0.35,1)
       });
     }
@@ -106,17 +105,17 @@
     ctx.globalCompositeOperation = 'lighter';
     for(var i=0;i<stars.length;i++){
       var s = stars[i];
-      var a = s.b * (0.45 + 0.55*Math.abs(Math.sin(t*0.001*s.s + s.p)));
-      ctx.beginPath();
-      ctx.fillStyle = 'rgba(255,255,255,' + a.toFixed(3) + ')';
-      ctx.arc(s.x, s.y, s.r, 0, 6.2832);
-      ctx.fill();
-      if(s.r > 1.25){
+      var a = s.b * (0.5 + 0.5*Math.abs(Math.sin(t*0.001*s.s + s.p)));
+      if(s.r > 1.0){
         ctx.beginPath();
-        ctx.fillStyle = 'rgba(180,210,255,' + (a*0.16).toFixed(3) + ')';
-        ctx.arc(s.x, s.y, s.r*4, 0, 6.2832);
+        ctx.fillStyle = 'rgba(190,215,255,' + (a*0.09).toFixed(3) + ')';
+        ctx.arc(s.x, s.y, s.r*2.6, 0, 6.2832);
         ctx.fill();
       }
+      ctx.beginPath();
+      ctx.fillStyle = 'rgba(255,255,255,' + Math.min(1, a*1.05).toFixed(3) + ')';
+      ctx.arc(s.x, s.y, s.r, 0, 6.2832);
+      ctx.fill();
     }
     ctx.restore();
   }
@@ -124,8 +123,8 @@
   function launch(tx, ty){
     if(ty > H*0.72) ty = H*0.72;
     if(ty < H*0.08) ty = H*0.08;
-    var x0 = tx + rnd(-W*0.03, W*0.03);
-    var frames = Math.max(20, Math.round(rnd(28,40)));
+    var x0 = tx + rnd(-W*0.02, W*0.02);
+    var frames = Math.max(16, Math.round(rnd(22,32)));
     rockets.push({
       x: x0, y: H + 8,
       vx: (tx - x0)/frames,
@@ -138,26 +137,26 @@
 
   function burst(x, y, color){
     var style = pick(['ring','burst','burst','double']);
-    var count = style === 'ring' ? 90 : Math.round(rnd(70,120));
+    var count = style === 'ring' ? 110 : Math.round(rnd(95,150));
     if(sparks.length > MAX_SPARKS) sparks.splice(0, sparks.length - MAX_SPARKS + count);
     var c2 = pick(PALETTE);
     for(var i=0;i<count;i++){
       var ang, spd;
       if(style === 'ring'){
-        ang = (i/count)*6.2832 + rnd(-0.02,0.02);
-        spd = rnd(4.2,5.4);
+        ang = (i/count)*6.2832 + rnd(-0.015,0.015);
+        spd = rnd(5.0,6.2);
       }else{
         ang = Math.random()*6.2832;
-        spd = Math.pow(Math.random(), 0.55) * 6.2 + 0.7;
+        spd = Math.pow(Math.random(), 0.5) * 7.0 + 0.8;
       }
       sparks.push({
         x: x, y: y,
         vx: Math.cos(ang)*spd,
         vy: Math.sin(ang)*spd,
-        life: rnd(46, 82),
-        max: 82,
+        life: rnd(52, 92),
+        max: 92,
         color: (style === 'double' && i % 2 === 0) ? c2 : color,
-        w: rnd(1.1, 2.6),
+        w: rnd(1.2, 2.8),
         px: x, py: y
       });
     }
@@ -175,9 +174,12 @@
 
   function step(t){
     now = t;
-    // trail fade
-    ctx.fillStyle = 'rgba(5,7,26,0.19)';
+    // fade trails to transparent so the night-sky gradient stays visible
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-out';
+    ctx.fillStyle = 'rgba(0,0,0,0.15)';
     ctx.fillRect(0,0,W,H);
+    ctx.restore();
     drawStars(t);
 
     ctx.save();
