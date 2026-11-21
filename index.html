@@ -153,8 +153,8 @@
         x: x, y: y,
         vx: Math.cos(ang)*spd,
         vy: Math.sin(ang)*spd,
-        life: rnd(55, 88),
-        max: 88,
+        life: rnd(50, 78),
+        max: 78,
         color: (style === 'double' && i % 2 === 0) ? c2 : color,
         w: rnd(1.2, 2.8),
         px: x, py: y
@@ -177,7 +177,7 @@
     // fade trails to transparent so the night-sky gradient stays visible
     ctx.save();
     ctx.globalCompositeOperation = 'destination-out';
-    ctx.fillStyle = 'rgba(0,0,0,0.15)';
+    ctx.fillStyle = 'rgba(0,0,0,0.21)';
     ctx.fillRect(0,0,W,H);
     ctx.restore();
     drawStars(t);
@@ -217,7 +217,7 @@
         continue;
       }
       var a = s.life / s.max;
-      ctx.globalAlpha = Math.max(0, Math.min(1, Math.pow(a, 1.6)*1.3));
+      ctx.globalAlpha = Math.max(0, Math.min(1, Math.pow(a, 1.35)*1.35));
       ctx.strokeStyle = s.color;
       ctx.lineWidth = s.w * (0.35 + a*0.8);
       ctx.beginPath(); ctx.moveTo(s.px, s.py); ctx.lineTo(s.x, s.y); ctx.stroke();
