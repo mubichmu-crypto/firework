@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05071a">
+<title>불꽃놀이</title>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0;overflow:hidden;background:#05071a}
+  body{
+    position:relative;
+    font-family:"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,-apple-system,sans-serif;
+    background:
+      radial-gradient(120% 75% at 50% 108%,#1b2a6b 0%,#101a44 26%,#070c24 55%,#040614 100%),
+      #040614;
+  }
+  #sky{position:fixed;inset:0;display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
+  .overlay{
+    position:fixed;inset:0;pointer-events:none;z-index:2;
+    background:radial-gradient(90% 70% at 50% 45%,rgba(0,0,0,0) 45%,rgba(2,3,12,.55) 100%);
+  }
+  .hud{
+    position:fixed;top:0;left:0;right:0;z-index:3;pointer-events:none;
+    padding:clamp(22px,6vw,48px) 16px 0;text-align:center
+  }
+  h1{
+    margin:0;font-size:clamp(34px,10.5vw,64px);font-weight:900;letter-spacing:clamp(2px,1.2vw,8px);
+    color:#fdf7ff;
+    text-shadow:
+      0 0 4px rgba(255,255,255,.9),
+      0 0 14px rgba(255,180,255,.85),
+      0 0 30px rgba(255,80,200,.75),
+      0 0 56px rgba(160,60,255,.65),
+      0 0 90px rgba(90,150,255,.45);
+    animation:flicker 6s ease-in-out infinite
+  }
+  @keyframes flicker{
+    0%,100%{opacity:1;filter:brightness(1)}
+    45%{opacity:.93;filter:brightness(1.06)}
+    52%{opacity:1;filter:brightness(.98)}
+  }
+  .hint{
+    margin:clamp(10px,2.6vw,16px) 0 0;font-size:clamp(13px,3.6vw,16px);font-weight:600;
+    color:#d8e3ff;letter-spacing:-.2px;text-shadow:0 0 12px rgba(140,180,255,.55);
+    transition:opacity .8s ease
+  }
+  .hint.on{opacity:.42}
+  .hint span{display:inline-block;animation:twinkle 2.2s ease-in-out infinite}
+  @keyframes twinkle{0%,100%{transform:scale(1);opacity:.85}50%{transform:scale(1.35);opacity:1}}
+  @media (prefers-reduced-motion:reduce){h1{animation:none}.hint span{animation:none}}
+</style>
+</head>
+<body>
+  <canvas id="sky" aria-label="불꽃놀이 캔버스"></canvas>
+  <div class="overlay"></div>
+  <div class="hud">
+    <h1>불꽃놀이</h1>
+    <p class="hint" id="hint">화면 아무 곳이나 눌러 보세요 <span>✨</span></p>
+  </div>
+
+<script>
+(function(){
+  'use strict';
+  var canvas = document.getElementById('sky');
+  var ctx = canvas.getContext('2d');
+  var hint = document.getElementById('hint');
+  var W = 0, H = 0, DPR = 1;
+  var stars = [], rockets = [], sparks = [];
+  var MAX_SPARKS = 2600;
+  var PALETTE = ['#ff5f6d','#ff8a3d','#ffd93d','#8affc1','#4ee6ff','#6b8cff','#b46bff','#ff6ec7','#ffffff','#ffb3c7'];
+  var now = 0;
+
+  function rnd(a,b){ return a + Math.random()*(b-a); }
+  function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+
+  function resize(){
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    canvas.width = Math.round(W*DPR); canvas.height = Math.round(H*DPR);
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    makeStars();
+    ctx.fillStyle = '#05071a';
+    ctx.fillRect(0,0,W,H);
+  }
+
+  function makeStars(){
+    var count = Math.round((W*H)/9000);
+    count = Math.max(70, Math.min(count, 220));
+    stars = [];
+    for(var i=0;i<count;i++){
+      stars.push({
+        x: Math.random()*W,
+        y: Math.random()*H*0.92,
+        r: rnd(0.5,1.6),
+        p: Math.random()*Math.PI*2,
+        s: rnd(0.6,2.0),
+        b: rnd(0.35,1)
+      });
+    }
+  }
+
+  function drawStars(t){
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    for(var i=0;i<stars.length;i++){
+      var s = stars[i];
+      var a = s.b * (0.45 + 0.55*Math.abs(Math.sin(t*0.001*s.s + s.p)));
+      ctx.beginPath();
+      ctx.fillStyle = 'rgba(255,255,255,' + a.toFixed(3) + ')';
+      ctx.arc(s.x, s.y, s.r, 0, 6.2832);
+      ctx.fill();
+      if(s.r > 1.25){
+        ctx.beginPath();
+        ctx.fillStyle = 'rgba(180,210,255,' + (a*0.16).toFixed(3) + ')';
+        ctx.arc(s.x, s.y, s.r*4, 0, 6.2832);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+
+  function launch(tx, ty){
+    if(ty > H*0.72) ty = H*0.72;
+    if(ty < H*0.08) ty = H*0.08;
+    var x0 = tx + rnd(-W*0.03, W*0.03);
+    var frames = Math.max(20, Math.round(rnd(28,40)));
+    rockets.push({
+      x: x0, y: H + 8,
+      vx: (tx - x0)/frames,
+      vy: (ty - (H+8))/frames,
+      left: frames,
+      color: pick(PALETTE),
+      px: x0, py: H + 8
+    });
+  }
+
+  function burst(x, y, color){
+    var style = pick(['ring','burst','burst','double']);
+    var count = style === 'ring' ? 90 : Math.round(rnd(70,120));
+    if(sparks.length > MAX_SPARKS) sparks.splice(0, sparks.length - MAX_SPARKS + count);
+    var c2 = pick(PALETTE);
+    for(var i=0;i<count;i++){
+      var ang, spd;
+      if(style === 'ring'){
+        ang = (i/count)*6.2832 + rnd(-0.02,0.02);
+        spd = rnd(4.2,5.4);
+      }else{
+        ang = Math.random()*6.2832;
+        spd = Math.pow(Math.random(), 0.55) * 6.2 + 0.7;
+      }
+      sparks.push({
+        x: x, y: y,
+        vx: Math.cos(ang)*spd,
+        vy: Math.sin(ang)*spd,
+        life: rnd(46, 82),
+        max: 82,
+        color: (style === 'double' && i % 2 === 0) ? c2 : color,
+        w: rnd(1.1, 2.6),
+        px: x, py: y
+      });
+    }
+    // flash
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    var g = ctx.createRadialGradient(x,y,0,x,y,90);
+    g.addColorStop(0,'rgba(255,255,255,.42)');
+    g.addColorStop(0.35,'rgba(255,255,255,.12)');
+    g.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(x,y,90,0,6.2832); ctx.fill();
+    ctx.restore();
+  }
+
+  function step(t){
+    now = t;
+    // trail fade
+    ctx.fillStyle = 'rgba(5,7,26,0.19)';
+    ctx.fillRect(0,0,W,H);
+    drawStars(t);
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.lineCap = 'round';
+
+    var i, r, s;
+    for(i = rockets.length - 1; i >= 0; i--){
+      r = rockets[i];
+      r.px = r.x; r.py = r.y;
+      r.x += r.vx; r.y += r.vy; r.left--;
+      ctx.strokeStyle = 'rgba(255,240,200,.85)';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.moveTo(r.px, r.py); ctx.lineTo(r.x, r.y); ctx.stroke();
+      ctx.strokeStyle = r.color;
+      ctx.globalAlpha = .5;
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(r.px, r.py); ctx.lineTo(r.x - r.vx*2.5, r.y - r.vy*2.5); ctx.stroke();
+      ctx.globalAlpha = 1;
+      if(r.left <= 0){
+        burst(r.x, r.y, r.color);
+        rockets.splice(i,1);
+      }
+    }
+
+    for(i = sparks.length - 1; i >= 0; i--){
+      s = sparks[i];
+      s.px = s.x; s.py = s.y;
+      s.vx *= 0.972; s.vy *= 0.972;
+      s.vy += 0.035;
+      s.x += s.vx; s.y += s.vy;
+      s.life--;
+      if(s.life <= 0 || s.y > H + 40){
+        sparks.splice(i,1);
+        continue;
+      }
+      var a = s.life / s.max;
+      ctx.globalAlpha = Math.max(0, Math.min(1, a*1.15));
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = s.w * (0.35 + a*0.8);
+      ctx.beginPath(); ctx.moveTo(s.px, s.py); ctx.lineTo(s.x, s.y); ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+
+    requestAnimationFrame(step);
+  }
+
+  var autoTimer = null;
+  function autoLoop(){
+    autoTimer = setTimeout(function(){
+      if(!document.hidden && sparks.length < MAX_SPARKS*0.7){
+        launch(rnd(W*0.18, W*0.82), rnd(H*0.10, H*0.45));
+      }
+      autoLoop();
+    }, rnd(900, 2400));
+  }
+
+  var firstTouch = false;
+  function onPoint(clientX, clientY){
+    launch(clientX, clientY);
+    if(!firstTouch){
+      firstTouch = true;
+      hint.classList.add('on');
+    }
+  }
+
+  canvas.addEventListener('pointerdown', function(e){
+    if(e.cancelable) e.preventDefault();
+    onPoint(e.clientX, e.clientY);
+  });
+
+  window.addEventListener('resize', resize);
+  window.addEventListener('orientationchange', function(){
+    setTimeout(resize, 260);
+  });
+
+  resize();
+  requestAnimationFrame(step);
+  setTimeout(function(){
+    launch(W*0.5, H*0.34);
+    autoLoop();
+  }, 700);
+})();
+</script>
+</body>
+</html>
