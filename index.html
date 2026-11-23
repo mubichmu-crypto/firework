@@ -441,7 +441,8 @@
 
     if (shape){
       // 모양 불꽃: 그 모양을 그대로 반경까지 확장한다
-      var pts = shapePoints(shape, Math.round(190 + 34*mult));
+      radius *= 0.9;
+      var pts = shapePoints(shape, Math.round(Math.max(220, Math.min(780, 2*Math.PI*radius/4.2))));
       L = rnd(96, 128) * (0.95 + 0.05*mult);
       drag = 0.9802;
       sumS = (1 - Math.pow(drag, L)) / (1 - drag);
