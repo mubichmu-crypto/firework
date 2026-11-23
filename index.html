@@ -482,8 +482,8 @@
       total = Math.round(clamp(opts.count || Math.round(220*(0.88 + 0.12*mult)), 180, 340));
       m = Math.round(total * 0.09);           // 가운데를 채우는 잔불(작게·곷고루 퍼져 하얗게 몽치지 않게)
       n = total - m;
-      L = rnd(64, 82) * (0.95 + 0.05*mult);
-      drag = 0.9455;
+      L = rnd(72, 90) * (0.96 + 0.04*mult);
+      drag = 0.905;                          // 터지자마자 반경까지 빨리 피고 잠시 머문다
       sumS = (1 - Math.pow(drag, L)) / (1 - drag);
       sp = radius / sumS;                      // 반경에 닿는 기준 속도
       for (i=0;i<n;i++){
@@ -497,7 +497,7 @@
         vels.push([Math.cos(ang)*sp2, Math.sin(ang)*sp2]);
       }
       lifeBase = L;
-      grav = 0.030;
+      grav = 0.020;
     }
 
     if (sparks.length + vels.length > MAX_SPARKS){
