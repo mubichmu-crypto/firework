@@ -480,7 +480,7 @@
     } else {
       // 발당 파티클은 뭉개지지 않는 선(180~280개)으로 묶는다
       total = Math.round(clamp(opts.count || Math.round(220*(0.88 + 0.12*mult)), 180, 340));
-      m = Math.round(total * 0.16);           // 가운데를 채우는 잔불
+      m = Math.round(total * 0.09);           // 가운데를 채우는 잔불(작게·곷고루 퍼져 하얗게 몽치지 않게)
       n = total - m;
       L = rnd(64, 82) * (0.95 + 0.05*mult);
       drag = 0.9455;
@@ -493,7 +493,7 @@
       }
       for (i=0;i<m;i++){
         ang = Math.random()*6.2832;
-        var sp2 = sp * rnd(0.03, 0.22);
+        var sp2 = sp * rnd(0.10, 0.38);
         vels.push([Math.cos(ang)*sp2, Math.sin(ang)*sp2]);
       }
       lifeBase = L;
