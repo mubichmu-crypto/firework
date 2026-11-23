@@ -305,13 +305,32 @@
 
   /* ── 화면 ──────────────────────────────────── */
   function resize(){
-    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    DPR = Math.min(window.devicePixelRatio || 1, 3);
     W = window.innerWidth; H = window.innerHeight;
     canvas.width = Math.round(W*DPR); canvas.height = Math.round(H*DPR);
     canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
     ctx.setTransform(DPR,0,0,DPR,0,0);
     makeStars();
+    buildSky();
     ctx.clearRect(0,0,W,H);
+  }
+
+  // 매 프레임 덮어 잔상을 걷어낼 밤하늘 (한 덩어리 그라데이션)
+  var skyGrad = null;
+  var SKY_FADE = 0.28;
+
+  function buildSky(){
+    var cx = W*0.5, cy = H*1.08;
+    var r = Math.max(
+      Math.sqrt(Math.pow(W*0.5,2) + Math.pow(H*1.08,2)),
+      Math.sqrt(Math.pow(W*0.5,2) + Math.pow(H*0.08,2))
+    );
+    var g = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(1, r));
+    g.addColorStop(0,'#1b2a6b');
+    g.addColorStop(0.26,'#101a44');
+    g.addColorStop(0.55,'#070c24');
+    g.addColorStop(1,'#040614');
+    skyGrad = g;
   }
 
   function makeStars(){
@@ -350,13 +369,14 @@
     ctx.restore();
   }
 
+  // 터지는 순간의 짧은 섬광 — 하얗게 날아가지 않을 만큼만
   function flash(x, y, radius){
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     var g = ctx.createRadialGradient(x,y,0,x,y,radius);
-    g.addColorStop(0,'rgba(255,255,255,.58)');
-    g.addColorStop(0.26,'rgba(255,255,255,.22)');
-    g.addColorStop(0.62,'rgba(205,228,255,.07)');
+    g.addColorStop(0,'rgba(255,255,255,.30)');
+    g.addColorStop(0.30,'rgba(255,244,232,.11)');
+    g.addColorStop(0.66,'rgba(208,228,255,.030)');
     g.addColorStop(1,'rgba(255,255,255,0)');
     ctx.fillStyle = g;
     ctx.beginPath(); ctx.arc(x,y,radius,0,6.2832); ctx.fill();
@@ -423,6 +443,7 @@
       px: x0, py: H + 8,
       size: opts.size || 1,
       shape: opts.shape || null,
+      count: opts.count || 0,
       sound: !silent
     });
 
@@ -431,32 +452,38 @@
 
   function burst(x, y, color, opts){
     opts = opts || {};
-    var mult = clamp(opts.size || 1, 0.5, 3.4);
+    var mult = clamp(opts.size || 1, 0.5, 3.2);
     var shape = opts.shape || null;
     var c2 = opts.color2 || pick(PALETTE);
     var ref = Math.min(W, H);
-    var radius = ref * (0.17 + 0.095*mult);   // 화면 크기에 맞춘 폭발 반경(px)
+    var radius = ref * (0.155 + 0.082*mult);   // 화면 크기에 맞춘 폭발 반경(px)
     var drag, grav, lifeBase, sumS, vScale, L;
-    var vels = [], i, ang, sp, jj, life, n, m;
+    var vels = [], i, ang, sp, jj, life, n, m, total;
+    var dotR = clamp(1.25 + 0.14*mult, 1.3, 2.2);   // 불티 하나의 반지름(px)
 
     if (shape){
-      // 모양 불꽃: 그 모양을 그대로 반경까지 확장한다
-      radius *= 0.9;
-      var pts = shapePoints(shape, Math.round(Math.max(220, Math.min(780, 2*Math.PI*radius/4.2))));
-      L = rnd(96, 128) * (0.95 + 0.05*mult);
-      drag = 0.9802;
+      // 모양 불꽃: 가는 빛 점들이 모양을 그리도록 점 간격을 넓게 둔다
+      radius *= 0.90;
+      var count = Math.round(clamp(6.2832*radius/4.6, 110, 200));
+      var pts = shapePoints(shape, count);
+      L = rnd(88, 104);
+      drag = 0.9722;
       sumS = (1 - Math.pow(drag, L)) / (1 - drag);
       vScale = radius / sumS;
       for (i=0;i<pts.length;i++){
-        jj = 0.965 + Math.random()*0.07;
+        jj = 0.974 + Math.random()*0.052;
         vels.push([pts[i][0]*vScale*jj, pts[i][1]*vScale*jj]);
       }
       lifeBase = L;
-      grav = (shape === 'heart') ? 0.008 : 0.006;
+      grav = (shape === 'heart') ? 0.0055 : 0.0040;
+      dotR = 1.5;
     } else {
-      n = Math.round(rnd(155, 215) * Math.min(2.7, mult));
-      L = rnd(70, 92) * (0.94 + 0.06*mult);
-      drag = 0.9435;
+      // 발당 파티클은 뭉개지지 않는 선(180~280개)으로 묶는다
+      total = Math.round(clamp(opts.count || Math.round(200*(0.88 + 0.12*mult)), 150, 340));
+      m = Math.round(total * 0.16);           // 가운데를 채우는 잔불
+      n = total - m;
+      L = rnd(64, 82) * (0.95 + 0.05*mult);
+      drag = 0.9455;
       sumS = (1 - Math.pow(drag, L)) / (1 - drag);
       sp = radius / sumS;                      // 반경에 닿는 기준 속도
       for (i=0;i<n;i++){
@@ -464,11 +491,9 @@
         var f = 0.34 + Math.pow(Math.random(), 0.55)*0.86;
         vels.push([Math.cos(ang)*sp*f, Math.sin(ang)*sp*f]);
       }
-      // 가운데를 채우는 잔불
-      m = Math.round(46*mult);
       for (i=0;i<m;i++){
         ang = Math.random()*6.2832;
-        var sp2 = sp * rnd(0.04, 0.28);
+        var sp2 = sp * rnd(0.03, 0.22);
         vels.push([Math.cos(ang)*sp2, Math.sin(ang)*sp2]);
       }
       lifeBase = L;
@@ -480,20 +505,20 @@
     }
 
     for (i=0;i<vels.length;i++){
-      life = Math.round(lifeBase * rnd(0.86, 1.10));
+      life = Math.round(lifeBase * rnd(0.88, 1.08));
       sparks.push({
         x: x, y: y, px: x, py: y,
         vx: vels[i][0], vy: vels[i][1],
         life: life, max: life,
-        color: (!shape && Math.random() < 0.30) ? c2 : color,
-        w: rnd(1.7, 3.3) * (mult > 1.6 ? 1.18 : 1),
+        color: (!shape && Math.random() < 0.26) ? c2 : color,
+        r: shape ? dotR : dotR * rnd(0.86, 1.08),
         g: grav,
         drag: drag,
         flick: Math.random()*6.2832
       });
     }
 
-    flash(x, y, Math.max(120, radius*0.92));
+    flash(x, y, Math.max(70, radius*0.62));
     if (opts.sound !== false) playPop((x/W)*2 - 1, Math.min(1.3, 0.55 + 0.30*mult));
   }
 
@@ -507,16 +532,16 @@
 
     var n = 5 + Math.floor(Math.random()*3);          // 5~7발
     var colors = shuffle(PALETTE.slice());
-    var step = 260;
+    var step = 400;
     var i;
 
     for (i=0;i<n;i++){
       (function(idx){
         addT(120 + idx*step, function(){
-          var x = W*(0.14 + 0.72*((idx + 0.5)/n)) + rnd(-W*0.025, W*0.025);
-          var y = H*(0.30 + Math.random()*0.18);
+          var x = W*(0.14 + 0.72*((idx + 0.5)/n)) + rnd(-W*0.02, W*0.02);
+          var y = H*(0.34 + Math.random()*0.20);
           launch(x, y, {
-            size: 2.2 + Math.random()*0.6,
+            size: 1.8 + Math.random()*0.5,
             color: colors[(idx*3 + 1) % colors.length],
             frames: Math.round(rnd(30,42))
           });
@@ -526,32 +551,31 @@
 
     // 하트 · 별 · 링 모양 축하 불꽃 (시간차)
     addT(0, function(){
-      burst(W*0.5, H*0.50, '#ff8fd0', { shape:'heart', size:2.7, color2:'#ffe3f2' });
+      burst(W*0.5, H*0.48, '#ff8fd0', { shape:'heart', size:2.1, color2:'#ffe3f2' });
     });
     addT(140 + step*1.6, function(){
-      burst(W*0.26, H*0.52, '#ffd93d', { shape:'star', size:2.4, color2:'#fff6c9' });
+      burst(W*0.26, H*0.50, '#ffd93d', { shape:'star', size:2.0, color2:'#fff6c9' });
     });
     addT(140 + step*3.2, function(){
-      burst(W*0.74, H*0.52, '#4ee6ff', { shape:'ring', size:2.6, color2:'#c8f7ff' });
+      burst(W*0.74, H*0.50, '#4ee6ff', { shape:'ring', size:2.0, color2:'#c8f7ff' });
     });
     addT(140 + step*4.6, function(){
-      burst(W*0.5, H*0.62, '#b46bff', { shape:'heart', size:2.3, color2:'#ff9ad5' });
+      burst(W*0.5, H*0.60, '#b46bff', { shape:'heart', size:2.0, color2:'#ff9ad5' });
     });
-    addT(170 + n*step + 380, function(){
-      burst(W*0.5, H*0.44, '#fff3b0', { shape:'ring', size:2.8, color2:'#ff9fd6' });
-      burst(W*0.5, H*0.44, '#ffffff', { shape:'star', size:2.0, color2:'#ffd6f0', sound:false });
-      flash(W*0.5, H*0.44, Math.min(W,H)*0.7);
+    addT(170 + n*step + 500, function(){
+      burst(W*0.5, H*0.44, '#fff3b0', { shape:'ring', size:2.2, color2:'#ff9fd6' });
+      burst(W*0.5, H*0.44, '#ffffff', { shape:'star', size:1.7, color2:'#ffd6f0', sound:false });
+      flash(W*0.5, H*0.44, Math.min(W,H)*0.45);
     });
   }
 
   /* ── 메인 루프 ─────────────────────────────── */
   function step(t){
-    // 흔적을 투명하게 지워 밤하늘 그라데이션이 비치게 한다
-    ctx.save();
-    ctx.globalCompositeOperation = 'destination-out';
-    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    // 배경(밤하늘 그라데이션)을 매 프레임 반쯤 덮어 잔상을 빠르게 걷어낸다
+    ctx.globalAlpha = SKY_FADE;
+    ctx.fillStyle = skyGrad;
     ctx.fillRect(0,0,W,H);
-    ctx.restore();
+    ctx.globalAlpha = 1;
 
     drawStars(t);
 
@@ -559,25 +583,24 @@
     ctx.globalCompositeOperation = 'lighter';
     ctx.lineCap = 'round';
 
-    var i, r, s;
+    var i, r, s, a, fade, flick, lastColor = null;
+
+    // 로켓 — 가는 빛줄기 하나만 남긴다
     for (i = rockets.length - 1; i >= 0; i--){
       r = rockets[i];
       r.px = r.x; r.py = r.y;
       r.x += r.vx; r.y += r.vy; r.left--;
-      ctx.strokeStyle = 'rgba(255,240,200,.92)';
-      ctx.lineWidth = 3.4;
+      ctx.strokeStyle = 'rgba(255,246,220,1)';
+      ctx.globalAlpha = .92;
+      ctx.lineWidth = 2.2;
       ctx.beginPath(); ctx.moveTo(r.px, r.py); ctx.lineTo(r.x, r.y); ctx.stroke();
+      ctx.strokeStyle = r.color;
       ctx.globalAlpha = .28;
-      ctx.strokeStyle = r.color;
-      ctx.lineWidth = 8;
-      ctx.beginPath(); ctx.moveTo(r.px, r.py); ctx.lineTo(r.x - r.vx*2, r.y - r.vy*2); ctx.stroke();
-      ctx.strokeStyle = r.color;
-      ctx.globalAlpha = .6;
-      ctx.lineWidth = 1.6;
-      ctx.beginPath(); ctx.moveTo(r.px, r.py); ctx.lineTo(r.x - r.vx*3.2, r.y - r.vy*3.2); ctx.stroke();
+      ctx.lineWidth = 4.6;
+      ctx.beginPath(); ctx.moveTo(r.x - r.vx*3.2, r.y - r.vy*3.2); ctx.lineTo(r.x, r.y); ctx.stroke();
       ctx.globalAlpha = 1;
       if (r.left <= 0){
-        burst(r.x, r.y, r.color, { size: r.size, shape: r.shape, sound: r.sound });
+        burst(r.x, r.y, r.color, { size: r.size, shape: r.shape, count: r.count, sound: r.sound });
         rockets.splice(i,1);
       }
     }
@@ -590,27 +613,23 @@
       s.vy += s.g;
       s.x += s.vx; s.y += s.vy;
       s.life--;
-      if (s.life <= 0 || s.y > H + 60) sparks.splice(i,1);
+      if (s.life <= 0 || s.y > H + 40) sparks.splice(i,1);
     }
 
-    // 번짐(halo) → 본선 순서로 두 번 그려 불꽃을 크고 환하게 만든다
-    var a, al;
-    for (var pass = 0; pass < 2; pass++){
-      var stepI = (pass === 0) ? 2 : 1;   // 번짐은 한 칸 건너 그려 부담을 줄인다
-      for (i = 0; i < sparks.length; i += stepI){
-        s = sparks[i];
-        a = s.life / s.max;
-        al = Math.min(1, Math.pow(a, 1.3)*1.45);
-        if (pass === 0){
-          ctx.globalAlpha = al * 0.24;
-          ctx.lineWidth = s.w * (2.4 + a*2.8);
-        } else {
-          ctx.globalAlpha = al * (0.84 + 0.16*Math.sin(t*0.028 + s.flick));
-          ctx.lineWidth = s.w * (0.34 + a*0.85);
-        }
-        ctx.strokeStyle = s.color;
-        ctx.beginPath(); ctx.moveTo(s.px, s.py); ctx.lineTo(s.x, s.y); ctx.stroke();
-      }
+    // 불티 = '한 프레임짜리 가는 꼬리 + 또렷한 코어 점' (번짐·뭉개짐 없음)
+    for (i = 0; i < sparks.length; i++){
+      s = sparks[i];
+      a = s.life / s.max;
+      fade = a > 0.72 ? 1 : Math.pow(a/0.72, 1.2);
+      flick = 0.84 + 0.16*Math.sin(t*0.030 + s.flick);
+      if (s.color !== lastColor){ ctx.fillStyle = s.color; ctx.strokeStyle = s.color; lastColor = s.color; }
+
+      ctx.globalAlpha = fade * 0.42 * flick;
+      ctx.lineWidth = s.r * 0.85;
+      ctx.beginPath(); ctx.moveTo(s.px, s.py); ctx.lineTo(s.x, s.y); ctx.stroke();
+
+      ctx.globalAlpha = Math.min(1, fade * 1.08) * flick;
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.2832); ctx.fill();
     }
     ctx.globalAlpha = 1;
     ctx.restore();
@@ -622,18 +641,18 @@
   var openingTimers = [];
   var openingActive = false;
 
-  // 화면 곳곳에 차례로 올려 터뜨릴 10발 (마지막 한 발이 가장 웅장하다)
+  // 화면 곳곳에 고루 퍼뜨려 차례로 올려 터뜨릴 10발 (마지막 한 발이 가장 웅장하다)
   var OPENING_PLAN = [
-    {x:0.30, y:0.46, size:2.0},
-    {x:0.70, y:0.40, size:2.1},
-    {x:0.50, y:0.50, size:2.2},
-    {x:0.22, y:0.52, size:1.9},
-    {x:0.78, y:0.48, size:2.0},
-    {x:0.38, y:0.40, size:2.2},
-    {x:0.63, y:0.46, size:2.3},
-    {x:0.50, y:0.44, size:2.4, shape:'star'},
-    {x:0.50, y:0.54, size:2.5, shape:'heart'},
-    {x:0.50, y:0.44, size:3.0, last:true}
+    {x:0.28, y:0.42, size:1.7},
+    {x:0.72, y:0.38, size:1.8},
+    {x:0.50, y:0.54, size:1.9},
+    {x:0.25, y:0.56, size:1.6},
+    {x:0.75, y:0.52, size:1.7},
+    {x:0.38, y:0.36, size:1.9},
+    {x:0.64, y:0.44, size:1.8},
+    {x:0.30, y:0.50, size:1.9, shape:'star', count:150},
+    {x:0.70, y:0.58, size:1.9, shape:'heart', count:150},
+    {x:0.50, y:0.44, size:2.6, last:true}
   ];
 
   function cancelOpening(){
@@ -642,15 +661,15 @@
     openingActive = false;
   }
 
-  // 마지막 한 발 — 화면을 가득 채우는 대형 폭발
+  // 마지막 한 발 — 큰 폭발 하나 + 양옆 모양 불꽃을 조금씩 시차를 두고
   function grandFinale(){
-    burst(W*0.5, H*0.44, '#ffe9a8', {size:3.0, color2:'#ffb3d9'});
-    burst(W*0.24, H*0.54, '#ff8fd0', {shape:'ring', size:2.7, color2:'#ffe6f4'});
-    burst(W*0.76, H*0.54, '#4ee6ff', {shape:'star', size:2.6, color2:'#d8f7ff'});
+    burst(W*0.50, H*0.44, '#ffe9a8', {size:2.6, color2:'#ffb3d9', count:320});
     setTimeout(function(){
-      burst(W*0.5, H*0.50, '#ffffff', {size:2.2, color2:'#ffe9a8', sound:false});
-      flash(W*0.5, H*0.50, Math.min(W,H)*0.72);
-    }, 260);
+      burst(W*0.27, H*0.54, '#ff8fd0', {shape:'ring', size:2.1, color2:'#ffe6f4', count:150});
+    }, 170);
+    setTimeout(function(){
+      burst(W*0.73, H*0.54, '#4ee6ff', {shape:'star', size:2.1, color2:'#d8f7ff', count:150});
+    }, 340);
   }
 
   function opening(){
@@ -660,16 +679,17 @@
     var at = 120;
 
     for (var i=0;i<OPENING_PLAN.length;i++){
-      at += (i === 0) ? 0 : rnd(430, 660);
+      at += (i === 0) ? 0 : rnd(750, 1050);
       (function(idx, delay, s){
         openingTimers.push(setTimeout(function(){
           if (!autoOn) return;
           if (s.last){
             grandFinale();
           } else {
-            launch(W*s.x + rnd(-W*0.02, W*0.02), H*s.y, {
+            launch(W*s.x + rnd(-W*0.015, W*0.015), H*s.y, {
               size: s.size,
               shape: s.shape || null,
+              count: s.count || 0,
               color: colors[(idx*3 + 1) % colors.length],
               frames: Math.round(rnd(26, 38))
             });
@@ -683,7 +703,7 @@
       openingActive = false;
       openingTimers = [];
       scheduleAuto();
-    }, at + 4200));
+    }, at + 5200));
   }
 
   /* ── 자동 불꽃 ─────────────────────────────── */
@@ -694,11 +714,11 @@
     if (autoTimer) clearTimeout(autoTimer);
     if (!autoOn) return;
     autoTimer = setTimeout(function(){
-      if (!document.hidden && !openingActive && sparks.length < MAX_SPARKS*0.55 && rockets.length < 5){
-        launch(rnd(W*0.20, W*0.80), rnd(H*0.28, H*0.52), { size: rnd(1.1, 1.9) });
+      if (!document.hidden && !openingActive && sparks.length < MAX_SPARKS*0.4 && rockets.length < 3){
+        launch(rnd(W*0.18, W*0.82), rnd(H*0.32, H*0.56), { size: rnd(1.0, 1.7) });
       }
       scheduleAuto();
-    }, rnd(1100, 2600));
+    }, rnd(1600, 3000));
   }
 
   function updateSound(){
