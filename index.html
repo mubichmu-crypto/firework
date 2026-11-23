@@ -456,7 +456,7 @@
     var shape = opts.shape || null;
     var c2 = opts.color2 || pick(PALETTE);
     var ref = Math.min(W, H);
-    var radius = ref * (0.155 + 0.082*mult);   // 화면 크기에 맞춘 폭발 반경(px)
+    var radius = ref * (0.165 + 0.088*mult);   // 화면 크기에 맞춘 폭발 반경(px)
     var drag, grav, lifeBase, sumS, vScale, L;
     var vels = [], i, ang, sp, jj, life, n, m, total;
     var dotR = clamp(1.25 + 0.14*mult, 1.3, 2.2);   // 불티 하나의 반지름(px)
@@ -464,22 +464,22 @@
     if (shape){
       // 모양 불꽃: 가는 빛 점들이 모양을 그리도록 점 간격을 넓게 둔다
       radius *= 0.90;
-      var count = Math.round(clamp(6.2832*radius/4.6, 110, 200));
+      var count = Math.round(clamp(6.2832*radius/4.4, 120, 200));
       var pts = shapePoints(shape, count);
-      L = rnd(88, 104);
-      drag = 0.9722;
+      L = rnd(100, 120);          // 모양이 빨리 피고 오래 머문다
+      drag = 0.910;
       sumS = (1 - Math.pow(drag, L)) / (1 - drag);
       vScale = radius / sumS;
       for (i=0;i<pts.length;i++){
-        jj = 0.974 + Math.random()*0.052;
+        jj = 0.978 + Math.random()*0.044;
         vels.push([pts[i][0]*vScale*jj, pts[i][1]*vScale*jj]);
       }
       lifeBase = L;
-      grav = (shape === 'heart') ? 0.0055 : 0.0040;
-      dotR = 1.5;
+      grav = (shape === 'heart') ? 0.0026 : 0.0022;
+      dotR = 1.65;
     } else {
       // 발당 파티클은 뭉개지지 않는 선(180~280개)으로 묶는다
-      total = Math.round(clamp(opts.count || Math.round(200*(0.88 + 0.12*mult)), 150, 340));
+      total = Math.round(clamp(opts.count || Math.round(220*(0.88 + 0.12*mult)), 180, 340));
       m = Math.round(total * 0.16);           // 가운데를 채우는 잔불
       n = total - m;
       L = rnd(64, 82) * (0.95 + 0.05*mult);
