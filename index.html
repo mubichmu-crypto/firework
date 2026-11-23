@@ -695,7 +695,7 @@
     if (!autoOn) return;
     autoTimer = setTimeout(function(){
       if (!document.hidden && !openingActive && sparks.length < MAX_SPARKS*0.55 && rockets.length < 5){
-        launch(rnd(W*0.16, W*0.84), rnd(H*0.10, H*0.45), { size: rnd(1.1, 1.9) });
+        launch(rnd(W*0.20, W*0.80), rnd(H*0.28, H*0.52), { size: rnd(1.1, 1.9) });
       }
       scheduleAuto();
     }, rnd(1100, 2600));
