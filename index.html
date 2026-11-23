@@ -464,7 +464,7 @@
     if (shape){
       // 모양 불꽃: 가는 빛 점들이 모양을 그리도록 점 간격을 넓게 둔다
       radius *= 0.90;
-      var count = Math.round(clamp(6.2832*radius/4.4, 120, 200));
+      var count = Math.round(clamp(6.2832*radius/7, 90, 160));
       var pts = shapePoints(shape, count);
       L = rnd(88, 104);           // 모양이 빨리 피고 한동안 또렷하게 머문다
       drag = 0.910;
@@ -476,7 +476,7 @@
       }
       lifeBase = L;
       grav = (shape === 'heart') ? 0.0026 : 0.0022;
-      dotR = 1.65;
+      dotR = 1.45;
     } else {
       // 발당 파티클은 뭉개지지 않는 선(180~280개)으로 묶는다
       total = Math.round(clamp(opts.count || Math.round(220*(0.88 + 0.12*mult)), 180, 340));
