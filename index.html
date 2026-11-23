@@ -466,7 +466,7 @@
       radius *= 0.90;
       var count = Math.round(clamp(6.2832*radius/4.4, 120, 200));
       var pts = shapePoints(shape, count);
-      L = rnd(100, 120);          // 모양이 빨리 피고 오래 머문다
+      L = rnd(88, 104);           // 모양이 빨리 피고 한동안 또렷하게 머문다
       drag = 0.910;
       sumS = (1 - Math.pow(drag, L)) / (1 - drag);
       vScale = radius / sumS;
@@ -701,27 +701,27 @@
       })(i, at, OPENING_PLAN[i]);
     }
 
-    // 마지막 발의 여운이 가신 뒤 일반 자동 불꽃으로 넘어간다
+    // 마지막 발의 여운이 가신 뒤 곷바로 일반 자동 불꽃으로 넘어간다
     openingTimers.push(setTimeout(function(){
       openingActive = false;
       openingTimers = [];
-      scheduleAuto();
-    }, at + 5200));
+      scheduleAuto(900);
+    }, at + 2600));
   }
 
   /* ── 자동 불꽃 ─────────────────────────────── */
   var autoOn = true;
   var autoTimer = null;
 
-  function scheduleAuto(){
+  function scheduleAuto(firstMs){
     if (autoTimer) clearTimeout(autoTimer);
     if (!autoOn) return;
     autoTimer = setTimeout(function(){
       if (!document.hidden && !openingActive && sparks.length < MAX_SPARKS*0.4 && rockets.length < 3){
-        launch(rnd(W*0.18, W*0.82), rnd(H*0.32, H*0.56), { size: rnd(1.0, 1.7) });
+        launch(rnd(W*0.18, W*0.82), rnd(H*0.32, H*0.58), { size: rnd(1.0, 1.7) });
       }
       scheduleAuto();
-    }, rnd(1600, 3000));
+    }, firstMs || rnd(1600, 3000));
   }
 
   function updateSound(){
