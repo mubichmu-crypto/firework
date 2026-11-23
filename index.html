@@ -464,7 +464,7 @@
     if (shape){
       // 모양 불꽃: 가는 빛 점들이 모양을 그리도록 점 간격을 넓게 둔다
       radius *= 0.90;
-      var count = Math.round(clamp(6.2832*radius/7, 90, 160));
+      var count = Math.round(clamp(6.2832*radius/7, 90, 260));
       var pts = shapePoints(shape, count);
       L = rnd(88, 104);           // 모양이 빨리 피고 한동안 또렷하게 머문다
       drag = 0.910;
