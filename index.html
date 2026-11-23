@@ -616,19 +616,22 @@
       if (s.life <= 0 || s.y > H + 40) sparks.splice(i,1);
     }
 
-    // 불티 = '한 프레임짜리 가는 꼬리 + 또렷한 코어 점' (번짐·뭉개짐 없음)
+    // 불티 = '얇고 이어진 꼬리 + 또렷한 코어 점' (번짐·뭉개짐 없음)
     for (i = 0; i < sparks.length; i++){
       s = sparks[i];
       a = s.life / s.max;
       fade = a > 0.72 ? 1 : Math.pow(a/0.72, 1.2);
-      flick = 0.84 + 0.16*Math.sin(t*0.030 + s.flick);
+      flick = 0.86 + 0.14*Math.sin(t*0.030 + s.flick);
       if (s.color !== lastColor){ ctx.fillStyle = s.color; ctx.strokeStyle = s.color; lastColor = s.color; }
 
-      ctx.globalAlpha = fade * 0.42 * flick;
-      ctx.lineWidth = s.r * 0.85;
-      ctx.beginPath(); ctx.moveTo(s.px, s.py); ctx.lineTo(s.x, s.y); ctx.stroke();
+      ctx.globalAlpha = fade * 0.34 * flick;
+      ctx.lineWidth = s.r * 0.82;
+      ctx.beginPath();
+      ctx.moveTo(s.x - s.vx*2.4, s.y - s.vy*2.4);
+      ctx.lineTo(s.x, s.y);
+      ctx.stroke();
 
-      ctx.globalAlpha = Math.min(1, fade * 1.08) * flick;
+      ctx.globalAlpha = Math.min(1, fade * 1.12) * flick;
       ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.2832); ctx.fill();
     }
     ctx.globalAlpha = 1;
